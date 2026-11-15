@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: deal-me-in
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/dealmein}
+    username: ${DATABASE_USER:dealmein}
+    password: ${DATABASE_PASSWORD:dealmein}
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 26MB
+  jackson:
+    default-property-inclusion: always
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  admin-username: ${APP_ADMIN_USERNAME:admin}
+  admin-password-hash: ${APP_ADMIN_PASSWORD_HASH:}
+  jwt-secret: ${APP_JWT_SECRET:}
+  token-ttl-minutes: ${APP_TOKEN_TTL_MINUTES:480}
+  cors-allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  upload-dir: ${APP_UPLOAD_DIR:./uploads}
+  max-upload-bytes: 2097152
+  default-retailer-timezone: ${APP_DEFAULT_RETAILER_TIMEZONE:America/New_York}
+  reports-per-hour: ${APP_REPORTS_PER_HOUR:5}
+  max-import-bytes: 26214400

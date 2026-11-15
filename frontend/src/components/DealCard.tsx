@@ -1,0 +1,95 @@
+import { Link } from 'react-router-dom'
+import type { Deal } from '../types'
+import { conditionLabel, priceView, timingLabel, verificationLabel } from '../format'
+import { useSaved } from '../saved'
+
+export function CategoryPlaceholder({ name }: { name: string }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-teal-50 to-cream-100 text-teal-700" role="img" aria-label={`${name} category placeholder`}>
+      <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="1.500" aria-hidden="true">
+        <path d="M3 12V4h8l10 10-8 8z" strokeLinejoin="round" />
+        <circle cx="7.500" cy="8.500" r="1.200" fill="currentColor" />
+      </svg>
+      <span className="text-xs font-semibold uppercase tracking-wide">{name}</span>
+    </div>
+  )
+}
+
+export function SaveButton({ id, title }: { id: number; title: string }) {
+  const { isSaved, toggle } = useSaved()
+  const saved = isSaved(id)
+  return (
+    <button
+      type="button"
+      aria-pressed={saved}
+      aria-label={saved ? `Remove ${title} from saved deals` : `Save ${title}`}
+      onClick={() => toggle(id)}
+      className={`btn border ${saved ? 'border-accent-600 bg-orange-50 text-accent-700' : 'border-teal-700/30 bg-white text-teal-800 hover:bg-teal-50'}`}
+    >
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M6 3h12v18l-6-4-6 4z" strokeLinejoin="round" />
+      </svg>
+      {saved ? 'Saved' : 'Save'}
+    </button>
+  )
+}
+
+export function DealCard({ deal, to }: { deal: Deal; to?: string }) {
+  const price = priceView(deal)
+  const ver = verificationLabel(deal)
+  const detail = to ?? `/deals/${deal.id}`
+  const conditions = [deal.rewardText, deal.conditionsText].filter(Boolean) as string[]
+  const timingTone = deal.timing === 'expired' ? 'bg-red-50 text-red-800' : deal.timing === 'active' ? 'bg-teal-50 text-teal-800' : 'bg-cream-100 text-ink-soft'
+  return (
+    <article className="card flex flex-col overflow-hidden" aria-labelledby={`deal-${deal.id}-title`}>
+      <div className="aspect-[16/10] w-full overflow-hidden bg-cream-100">
+        {deal.imageUrl ? (
+          <img src={deal.imageUrl} alt="" loading="lazy" className="h-full w-full object-contain" referrerPolicy="no-referrer" />
+        ) : (
+          <CategoryPlaceholder name={deal.category.name} />
+        )}
+      </div>
+      <div className="flex flex-1 flex-col gap-3 p-5">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="chip bg-teal-50 text-teal-800">{deal.retailer.name}</span>
+          {deal.offerType === 'STOREWIDE' && <span className="chip bg-orange-50 text-accent-700">Storewide promotion</span>}
+          {deal.condition !== 'NEW' && deal.condition !== 'UNKNOWN' && <span className="chip bg-cream-100 text-ink">{conditionLabel[deal.condition]}</span>}
+          {deal.status !== 'PUBLISHED' && <span className="chip bg-red-50 text-red-800">{deal.status.toLowerCase()}</span>}
+        </div>
+        <h3 id={`deal-${deal.id}-title`} className="text-base font-bold leading-snug text-ink">
+          {deal.title}
+          {deal.variant && <span className="block text-sm font-normal text-ink-soft">{deal.variant}</span>}
+        </h3>
+        <div>
+          <p className={price.kind === 'cash' ? 'text-2xl font-extrabold text-teal-800' : 'text-base font-semibold text-ink'}>{price.main}</p>
+          {price.note && <p className="text-xs text-ink-soft">{price.note}</p>}
+          {deal.discountPercent != null && deal.referencePrice != null && (
+            <p className="mt-1 text-xs text-ink-soft">
+              {deal.discountPercent}% below the advertised reference price of ${deal.referencePrice.toFixed(2)}
+            </p>
+          )}
+        </div>
+        {conditions.length > 0 && (
+          <ul className="space-y-1 text-sm text-accent-700">
+            {conditions.map((c, i) => (
+              <li key={i} className="line-clamp-2 rounded-lg bg-orange-50 px-2 py-1">
+                <span className="font-semibold">Conditions: </span>
+                {c}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-auto space-y-2 pt-1 text-xs text-ink-soft">
+          <p><span className={`chip ${timingTone}`}>{timingLabel(deal)}</span></p>
+          <p className={ver.tone === 'good' ? 'font-medium text-teal-800' : ''}>{ver.text}</p>
+        </div>
+        <div className="flex items-center gap-2 pt-1">
+          <Link to={detail} className="btn-primary flex-1">
+            View details<span className="sr-only">: {deal.title}</span>
+          </Link>
+          <SaveButton id={deal.id} title={deal.title} />
+        </div>
+      </div>
+    </article>
+  )
+}

@@ -1,0 +1,14 @@
+{"_note": "SYNTHETIC test fixture. Not the Deal Me In dataset.",
+ "records": [
+  {"id":"T-001","title":"Test TV 55 inch","variant":"55 in","retailer":"Best Buy","category":"Electronics","price":"499.99","listed_cash_price":"499.99","start_date":"2020-01-01","end_date":"2099-12-31","date_text":"through end of year","collected_at":"2025-11-01T12:00:00Z","source_url":"https://publisher.example/tv","source_name":"Publisher","verification_status":"source-reported","candidate_group":"G-1"},
+  {"id":"T-002","title":"Test Sneakers","retailer":"Shoe Mart","category":"Shoes","price":"$59.99 after $10 gift card","conditions":"Gift card with purchase","start_date":"2020-01-01","end_date":"2099-12-31","source_url":"https://publisher.example/shoes"},
+  {"id":"T-003","title":"Storewide 20% off","retailer":"Target","category":"Home","offer_type":"storewide","price_text":"20% off select items","source_url":"https://publisher.example/target"},
+  {"id":"T-004","title":"Old Blender","retailer":"Best Buy","category":"Kitchen","listed_cash_price":"29.00","start_date":"2020-01-01","end_date":"2020-01-02","source_url":"https://publisher.example/blender"},
+  {"id":"T-005","title":"Mystery Gadget","retailer":"Best Buy","category":"Gizmos","listed_cash_price":"15.00","date_text":"Black Friday","source_url":"https://publisher.example/gadget"},
+  {"id":"T-006","title":"Future Drill","retailer":"Home Depot","category":"Tools","listed_cash_price":"89.00","start_date":"2099-11-01","end_date":"2099-11-30","source_url":"https://publisher.example/drill"},
+  {"id":"T-007","title":"Conflicting Dates Toy","retailer":"Target","category":"Toys","listed_cash_price":"12.00","start_date":"2025-12-05","end_date":"2025-12-01","source_url":"https://publisher.example/toy"},
+  {"id":"T-001","title":"Duplicate id row","retailer":"Best Buy"},
+  {"title":"No id row","retailer":"Best Buy"},
+  {"id":"T-010","retailer":"Best Buy"},
+  {"id":"T-011","title":"Test TV 55 inch","variant":"55 in","retailer":"Walmart","category":"Electronics","listed_cash_price":"479.00","start_date":"2020-01-01","end_date":"2099-12-31","candidate_group":"G-1","product_url":"https://walmart.example/tv55","source_url":"javascript:alert(1)"}
+ ]}
