@@ -1,8 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { StaticRouter } from 'react-router-dom/server'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Deal } from '../types'
 import { DealCard } from './DealCard'
+import * as favorites from '../favorites'
 
 const deal = {
   id: 12, title: 'Desk lamp', variant: null, condition: 'NEW', retailer: { name: 'Store', slug: 'store' },
@@ -16,6 +17,7 @@ function renderCard(item: Deal, to?: string) {
 }
 
 describe('deal card links', () => {
+  afterEach(() => vi.restoreAllMocks())
   it('links to the retailer when a product URL exists, without save or detail buttons', () => {
     const markup = renderCard({ ...deal, retailerLink: 'https://store.example/lamp' })
     expect(markup).toContain('href="https://store.example/lamp"')
@@ -31,5 +33,15 @@ describe('deal card links', () => {
   })
   it('preserves the administrator title link', () => {
     expect(renderCard(deal, '/admin/deals/12')).toContain('href="/admin/deals/12"')
+  })
+  it('shows an accessible bookmark reflecting the account favorite state', () => {
+    const state = { ids: [] as number[], loading: false, error: null, pending: [], retry: () => {}, toggle: async () => {} }
+    vi.spyOn(favorites, 'useFavorites').mockReturnValue(state)
+    expect(renderCard(deal)).toContain('aria-label="Add Desk lamp to favorites"')
+    state.ids = [12]
+    const markup = renderCard(deal)
+    expect(markup).toContain('aria-label="Remove Desk lamp from favorites"')
+    expect(markup).toContain('aria-pressed="true"')
+    expect(renderCard(deal, '/admin/deals/12')).not.toContain('favorites')
   })
 })

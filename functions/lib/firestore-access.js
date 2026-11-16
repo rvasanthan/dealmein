@@ -15,6 +15,7 @@ async function requireApprovedUser(req, res, next) {
             res.status(403).json({ status: 403, code: 'USER_APPROVAL_REQUIRED', message: 'Account approval is required.' });
             return;
         }
+        res.locals.user = identity;
         next();
     }
     catch (error) {
@@ -22,5 +23,5 @@ async function requireApprovedUser(req, res, next) {
     }
 }
 function registerDealAccessGuard(app) {
-    app.use(['/api/deals', '/api/categories', '/api/retailers'], requireApprovedUser);
+    app.use(['/api/deals', '/api/categories', '/api/retailers', '/api/favorites'], requireApprovedUser);
 }

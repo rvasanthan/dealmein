@@ -14,7 +14,7 @@ export class ApiError extends Error {
 }
 
 export function needsApprovedSession(path: string) {
-  return /^\/api\/(?:deals|categories|retailers)(?:[/?]|$)/.test(path)
+  return /^\/api\/(?:deals|categories|retailers|favorites)(?:[/?]|$)/.test(path)
 }
 
 export async function api<T>(path: string, opts: { method?: string; body?: unknown; form?: FormData; raw?: BodyInit; headers?: Record<string, string>; admin?: boolean; signal?: AbortSignal } = {}): Promise<T> {

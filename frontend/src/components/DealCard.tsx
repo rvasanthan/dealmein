@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Deal } from '../types'
 import { conditionLabel, priceView, timingLabel, verificationLabel } from '../format'
-import { useSaved } from '../saved'
-import { ArrowUpRight } from 'lucide-react'
+import { useFavorites } from '../favorites'
+import { ArrowUpRight, Bookmark } from 'lucide-react'
 
 export function CategoryPlaceholder({ name }: { name: string }) {
   return (
@@ -17,21 +18,21 @@ export function CategoryPlaceholder({ name }: { name: string }) {
 }
 
 export function SaveButton({ id, title }: { id: number; title: string }) {
-  const { isSaved, toggle } = useSaved()
-  const saved = isSaved(id)
+  const favorites = useFavorites()
+  const [error, setError] = useState('')
+  if (!favorites) return null
+  const saved = favorites.ids.includes(id)
+  const label = saved ? `Remove ${title} from favorites` : `Add ${title} to favorites`
   return (
-    <button
-      type="button"
-      aria-pressed={saved}
-      aria-label={saved ? `Remove ${title} from saved deals` : `Save ${title}`}
-      onClick={() => toggle(id)}
-      className={`btn border ${saved ? 'border-accent-600 bg-orange-50 text-accent-700' : 'border-teal-700/30 bg-white text-teal-800 hover:bg-teal-50'}`}
-    >
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" aria-hidden="true">
-        <path d="M6 3h12v18l-6-4-6 4z" strokeLinejoin="round" />
-      </svg>
-      {saved ? 'Saved' : 'Save'}
-    </button>
+    <span className="inline-flex flex-col items-end gap-1">
+      <button type="button" aria-pressed={saved} aria-label={label} title={label}
+        disabled={favorites.loading || Boolean(favorites.error) || favorites.pending.includes(id)}
+        onClick={() => { setError(''); void favorites.toggle(id).catch((reason) => setError(reason instanceof Error ? reason.message : 'Could not update favorites.')) }}
+        className={`btn h-11 w-11 border !p-0 ${saved ? 'border-accent-600 bg-orange-50 text-accent-700' : 'border-teal-700/30 bg-white text-teal-800 hover:bg-teal-50'}`}>
+        <Bookmark size={19} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" />
+      </button>
+      {error && <span role="alert" className="text-xs text-red-800">{error}</span>}
+    </span>
   )
 }
 
@@ -49,6 +50,7 @@ export function DealCard({ deal, to }: { deal: Deal; to?: string }) {
           {deal.offerType === 'STOREWIDE' && <span className="chip bg-orange-50 text-accent-700">Storewide promotion</span>}
           {deal.condition !== 'NEW' && deal.condition !== 'UNKNOWN' && <span className="chip bg-cream-100 text-ink">{conditionLabel[deal.condition]}</span>}
           {deal.status === 'EXPIRED' && <span className="chip bg-red-50 text-red-800">expired</span>}
+          {!to && <span className="ml-auto"><SaveButton id={deal.id} title={deal.title} /></span>}
         </div>
         <h3 id={`deal-${deal.id}-title`} className="text-base font-bold leading-snug text-ink">
           {deal.retailerLink && !to ? <a href={deal.retailerLink} target="_blank" rel="noopener noreferrer nofollow" className="underline decoration-teal-700/40 underline-offset-2 hover:decoration-teal-700">{deal.title}</a> : <Link to={detail} className="underline decoration-teal-700/40 underline-offset-2 hover:decoration-teal-700">{deal.title}</Link>}

@@ -5,11 +5,13 @@ import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { expiryDateFor, registerFirestoreApi, registerFirestoreErrors, timingFor } from './firestore-api.js'
 import { registerFirestoreAdminApi } from './firestore-admin.js'
 import { registerDealAccessGuard } from './firestore-access.js'
+import { registerFavoritesApi } from './firestore-favorites.js'
 
 const app = express()
 app.use(express.json({ limit: '1mb' }))
 
 registerDealAccessGuard(app)
+registerFavoritesApi(app)
 registerFirestoreApi(app)
 registerFirestoreAdminApi(app)
 registerFirestoreErrors(app)

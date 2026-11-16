@@ -4,6 +4,7 @@ import { Link, Navigate, Outlet } from 'react-router-dom'
 import { api, ApiError } from '../api'
 import { auth } from '../firebase'
 import { Spinner } from './ui'
+import { FavoritesProvider } from '../favorites'
 
 export function RequireUser() {
   const [status, setStatus] = useState<'loading' | 'allowed' | 'signedOut' | 'denied' | 'error'>('loading')
@@ -31,5 +32,5 @@ export function RequireUser() {
   if (status === 'signedOut') return <Navigate to="/signin" replace />
   if (status === 'denied') return <div className="space-y-3"><p>Administrator approval is required to view deals.</p><Link className="btn-primary" to="/signin">Sign in</Link></div>
   if (status === 'error') return <div role="alert" className="space-y-3"><p>Could not check your account access.</p><button className="btn-primary" onClick={() => setAttempt((value) => value + 1)}>Try again</button></div>
-  return <Outlet />
+  return <FavoritesProvider><Outlet /></FavoritesProvider>
 }

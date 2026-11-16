@@ -6,11 +6,13 @@ const { registerFirestoreAdminApi } = require('../lib/firestore-admin.js')
 const { db, firestoreDeal, isPublicDeal, registerFirestoreApi, timingFor } = require('../lib/firestore-api.js')
 const { parseImport } = require('../lib/firestore-import.js')
 const { registerDealAccessGuard } = require('../lib/firestore-access.js')
+const { registerFavoritesApi } = require('../lib/firestore-favorites.js')
 const googleAdminAuth = require('../lib/google-admin-auth.js')
 const { googleIdentity } = googleAdminAuth
 googleAdminAuth.verifyGoogleToken = async (header) => header === 'Bearer valid-google-token'
   ? { uid: 'uid-1', email: 'admin@example.com', name: null } : header === 'Bearer pending-google-token'
-    ? { uid: 'uid-2', email: 'pending@example.com', name: null } : null
+    ? { uid: 'uid-2', email: 'pending@example.com', name: null } : header === 'Bearer second-google-token'
+      ? { uid: 'uid-3', email: 'second@example.com', name: null } : null
 process.env.APP_ADMIN_USERNAME = 'admin@example.com'
 
 test('Firestore deal mapper preserves the frontend contract and hides unapproved media', () => {
@@ -204,6 +206,44 @@ test('Deal routes require an approved user or administrator and disallow caching
     await request(app).get('/api/deals/catalog').set('Authorization', 'Bearer pending-google-token').expect(403)
     await request(app).get('/api/health').expect(200)
     await request(app).post('/api/user/access-request').expect(200)
+  } finally { db.collection = collection }
+})
+
+test('Favorites require approval and are isolated by verified user ID', async () => {
+  const collection = db.collection
+  const saved = new Map()
+  let userStatus = 'pending'
+  db.collection = (name) => {
+    if (name === 'dealmein_adminAccounts') return { doc: () => ({ get: async () => ({ exists: false }) }) }
+    if (name === 'dealmein_userAccounts') return { doc: () => ({ get: async () => ({ get: () => userStatus }) }) }
+    if (name === 'dealmein_deals') return { doc: (id) => ({ get: async () => ({ exists: id !== '99', data: () => ({ status: id === '98' ? 'ARCHIVED' : 'DRAFT' }) }) }) }
+    if (name === 'dealmein_userFavorites') return { doc: (uid) => ({ collection: () => ({
+      orderBy: () => ({ get: async () => ({ docs: [...(saved.get(uid) ?? new Set())].map((id) => ({ id })) }) }),
+      doc: (id) => ({ set: async () => { if (!saved.has(uid)) saved.set(uid, new Set()); saved.get(uid).add(id) },
+        delete: async () => { saved.get(uid)?.delete(id) } }),
+    }) }) }
+    throw new Error(`Unexpected collection: ${name}`)
+  }
+  try {
+    const app = express()
+    registerDealAccessGuard(app)
+    registerFavoritesApi(app)
+    await request(app).get('/api/favorites').expect(401)
+    await request(app).put('/api/favorites/1').set('Authorization', 'Bearer pending-google-token').expect(403)
+    userStatus = 'approved'
+    await request(app).put('/api/favorites/1').set('Authorization', 'Bearer pending-google-token').expect(200)
+    await request(app).put('/api/favorites/1').set('Authorization', 'Bearer pending-google-token').expect(200)
+    assert.deepEqual((await request(app).get('/api/favorites').set('Authorization', 'Bearer pending-google-token').expect(200)).body, [1])
+    assert.deepEqual((await request(app).get('/api/favorites').set('Authorization', 'Bearer second-google-token').expect(200)).body, [])
+    await request(app).put('/api/favorites/98').set('Authorization', 'Bearer pending-google-token').expect(404)
+    await request(app).put('/api/favorites/99').set('Authorization', 'Bearer pending-google-token').expect(404)
+    await request(app).put('/api/favorites/0').set('Authorization', 'Bearer pending-google-token').expect(400)
+    await request(app).delete('/api/favorites/1').set('Authorization', 'Bearer second-google-token').expect(200)
+    assert.deepEqual((await request(app).get('/api/favorites').set('Authorization', 'Bearer pending-google-token').expect(200)).body, [1])
+    await request(app).delete('/api/favorites/1').set('Authorization', 'Bearer pending-google-token').expect(200)
+    await request(app).delete('/api/favorites/1').set('Authorization', 'Bearer pending-google-token').expect(200)
+    userStatus = 'revoked'
+    await request(app).get('/api/favorites').set('Authorization', 'Bearer pending-google-token').expect(403)
   } finally { db.collection = collection }
 })
 

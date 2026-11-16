@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api'
 import type { Deal } from '../types'
 import { conditionLabel, dateOnly, instant, money, priceView, timingLabel, verificationLabel } from '../format'
-import { DealCard } from '../components/DealCard'
+import { DealCard, SaveButton } from '../components/DealCard'
 import { Empty, ErrorBox, Notice, Spinner } from '../components/ui'
 
 export function DealView({ deal, admin = false }: { deal: Deal; admin?: boolean }) {
@@ -113,6 +113,7 @@ export function DealView({ deal, admin = false }: { deal: Deal; admin?: boolean 
           ) : (
             <p className="text-sm text-ink-soft">No link is available for this offer.</p>
           )}
+          {!admin && <SaveButton id={deal.id} title={deal.title} />}
         </div>
         {!admin && <ReportForm id={deal.id} />}
       </aside>

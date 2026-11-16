@@ -9,10 +9,11 @@ export async function requireApprovedUser(req: Request, res: Response, next: Nex
     if (!await isApprovedAdmin(identity) && (await userRef(identity.email).get()).get('status') !== 'approved') {
       res.status(403).json({ status: 403, code: 'USER_APPROVAL_REQUIRED', message: 'Account approval is required.' }); return
     }
+    res.locals.user = identity
     next()
   } catch (error) { next(error) }
 }
 
 export function registerDealAccessGuard(app: Express) {
-  app.use(['/api/deals', '/api/categories', '/api/retailers'], requireApprovedUser)
+  app.use(['/api/deals', '/api/categories', '/api/retailers', '/api/favorites'], requireApprovedUser)
 }

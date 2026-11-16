@@ -47,7 +47,7 @@ cd ../frontend && npm test && npm run lint && npm run build
 - **Publishing**: the existing review and publish endpoints remain available, but are not required for imports or product entry.
 - **Prices**: the listed cash price is separate from the source-reported price, rewards, shipping/tax and the advertised reference price. Unknown values are null. Price filters exclude offers without a listed cash price; price sorts put them last. A discount percentage appears only when an explicit reference price exists, and is not described as historical value.
 - **Links**: valid product URLs lead directly to the retailer. When a product URL is absent, its detail page can link to the original publisher. Only http/https URLs are accepted.
-- **Saved deals** are stored in the browser (`localStorage`); the UI says so and shows expired/unavailable states.
+- **Favorites** are stored in Firestore under the signed-in user's Firebase UID and are available across devices. The Favorites page shows expired and unavailable deals and allows removing them. The previous browser-only saved list is not automatically imported.
 
 ### Date rule
 

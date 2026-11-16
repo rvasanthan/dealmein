@@ -8,6 +8,7 @@ import { auth, signOutFromGoogle } from '../firebase'
 const nav = [
   { to: '/', label: 'All Deals', end: true },
   { to: '/stores', label: 'Stores' },
+  { to: '/saved', label: 'Favorites' },
 ]
 
 export function Layout() {
