@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import type { Deal } from '../types'
 import { conditionLabel, priceView, timingLabel, verificationLabel } from '../format'
 import { useSaved } from '../saved'
+import { ArrowUpRight } from 'lucide-react'
 
 export function CategoryPlaceholder({ name }: { name: string }) {
   return (
@@ -41,23 +42,16 @@ export function DealCard({ deal, to }: { deal: Deal; to?: string }) {
   const conditions = [deal.rewardText, deal.conditionsText].filter(Boolean) as string[]
   const timingTone = deal.timing === 'expired' ? 'bg-red-50 text-red-800' : deal.timing === 'active' ? 'bg-teal-50 text-teal-800' : 'bg-cream-100 text-ink-soft'
   return (
-    <article className="card flex flex-col overflow-hidden" aria-labelledby={`deal-${deal.id}-title`}>
-      <div className="aspect-[16/10] w-full overflow-hidden bg-cream-100">
-        {deal.imageUrl ? (
-          <img src={deal.imageUrl} alt="" loading="lazy" className="h-full w-full object-contain" referrerPolicy="no-referrer" />
-        ) : (
-          <CategoryPlaceholder name={deal.category.name} />
-        )}
-      </div>
+    <article className="deal-card card flex flex-col overflow-hidden" aria-labelledby={`deal-${deal.id}-title`}>
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="chip bg-teal-50 text-teal-800">{deal.retailer.name}</span>
           {deal.offerType === 'STOREWIDE' && <span className="chip bg-orange-50 text-accent-700">Storewide promotion</span>}
           {deal.condition !== 'NEW' && deal.condition !== 'UNKNOWN' && <span className="chip bg-cream-100 text-ink">{conditionLabel[deal.condition]}</span>}
-          {deal.status !== 'PUBLISHED' && <span className="chip bg-red-50 text-red-800">{deal.status.toLowerCase()}</span>}
+          {deal.status === 'EXPIRED' && <span className="chip bg-red-50 text-red-800">expired</span>}
         </div>
         <h3 id={`deal-${deal.id}-title`} className="text-base font-bold leading-snug text-ink">
-          {deal.title}
+          {deal.retailerLink && !to ? <a href={deal.retailerLink} target="_blank" rel="noopener noreferrer nofollow" className="underline decoration-teal-700/40 underline-offset-2 hover:decoration-teal-700">{deal.title}</a> : <Link to={detail} className="underline decoration-teal-700/40 underline-offset-2 hover:decoration-teal-700">{deal.title}</Link>}
           {deal.variant && <span className="block text-sm font-normal text-ink-soft">{deal.variant}</span>}
         </h3>
         <div>
@@ -83,12 +77,7 @@ export function DealCard({ deal, to }: { deal: Deal; to?: string }) {
           <p><span className={`chip ${timingTone}`}>{timingLabel(deal)}</span></p>
           <p className={ver.tone === 'good' ? 'font-medium text-teal-800' : ''}>{ver.text}</p>
         </div>
-        <div className="flex items-center gap-2 pt-1">
-          <Link to={detail} className="btn-primary flex-1">
-            View details<span className="sr-only">: {deal.title}</span>
-          </Link>
-          <SaveButton id={deal.id} title={deal.title} />
-        </div>
+        {deal.retailerLink && !to && <a href={deal.retailerLink} target="_blank" rel="noopener noreferrer nofollow" className="btn-primary mt-1">Go to retailer <ArrowUpRight size={16} aria-hidden="true" /><span className="sr-only">: {deal.title}</span></a>}
       </div>
     </article>
   )

@@ -13,12 +13,16 @@ const CHECKS = [
   ['openReports', 'Open visitor reports'],
 ] as const
 
+type BulkResult = { published: number; expired: number; changed: number; failed: number; cursor: string | null }
+
 export default function AdminQueue() {
   const [sp, setSp] = useSearchParams()
   const [data, setData] = useState<Page<Deal> | null>(null)
   const [stats, setStats] = useState<Record<string, number> | null>(null)
   const [error, setError] = useState<unknown>(null)
   const [n, setN] = useState(0)
+  const [publishing, setPublishing] = useState(false)
+  const [bulkMessage, setBulkMessage] = useState('')
   const status = sp.get('status') ?? 'DRAFT'
   const page = Number(sp.get('page') ?? '1') || 1
   const qs = new URLSearchParams(sp)
@@ -39,9 +43,40 @@ export default function AdminQueue() {
     setSp(next)
   }
 
+  const publishDrafts = async () => {
+    if (!window.confirm('Publish all eligible drafts, regardless of the current filters? Deals may be unverified. Expired deals will be skipped.')) return
+    setPublishing(true)
+    setBulkMessage('Publishing drafts...')
+    const totals = { published: 0, expired: 0, changed: 0, failed: 0 }
+    let cursor: string | null = null
+    try {
+      do {
+        const result: BulkResult = await api('/api/admin/deals/bulk-publish', {
+          method: 'POST', admin: true, body: { confirmUnverified: true, ...(cursor ? { cursor } : {}) },
+        })
+        totals.published += result.published
+        totals.expired += result.expired
+        totals.changed += result.changed
+        totals.failed += result.failed
+        cursor = result.cursor
+        setBulkMessage(`Publishing: ${totals.published} published, ${totals.expired} expired skipped, ${totals.failed} failed.`)
+      } while (cursor)
+      setBulkMessage(`Finished: ${totals.published} published; ${totals.expired} expired, ${totals.changed} changed, and ${totals.failed} failed.`)
+    } catch (err) {
+      setBulkMessage(`Stopped after publishing ${totals.published}. ${err instanceof Error ? err.message : 'Please try again.'}`)
+    } finally {
+      setPublishing(false)
+      setN((value) => value + 1)
+    }
+  }
+
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-extrabold text-teal-800">Draft review queue</h1>
+      <h1 className="mb-4 text-2xl font-extrabold text-teal-800">Manage deals</h1>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <button className="btn-primary" type="button" disabled={publishing} onClick={publishDrafts}>{publishing ? 'Publishing...' : 'Publish all eligible drafts'}</button>
+        {bulkMessage && <p role="status" className="text-sm text-ink-soft">{bulkMessage}</p>}
+      </div>
       {stats && (
         <ul className="mb-4 flex flex-wrap gap-2 text-sm">
           {Object.entries(stats).map(([k, v]) => <li key={k} className="chip bg-white text-ink shadow-sm">{k}: <strong className="ml-1">{v}</strong></li>)}
@@ -113,7 +148,7 @@ export function AdminPreview() {
   return (
     <>
       <h1 className="mb-1 text-2xl font-extrabold text-teal-800">Administrator preview</h1>
-      <p className="mb-4 text-sm text-ink-soft">This is the public browsing interface, including drafts. Visitors never see draft offers.</p>
+      <p className="mb-4 text-sm text-ink-soft">Preview the product catalog.</p>
       <PreviewBrowser />
     </>
   )

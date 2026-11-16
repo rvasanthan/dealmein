@@ -4,6 +4,7 @@ import { api } from '../api'
 import type { Deal, Facet, Page } from '../types'
 import { DealCard } from './DealCard'
 import { Empty, ErrorBox, Pagination } from './ui'
+import { CatalogBrowser } from './CatalogBrowser'
 
 const TIMING_OPTIONS = [
   { value: '', label: 'Current (active, upcoming, unknown dates)' },
@@ -33,6 +34,11 @@ export function apiQuery(sp: URLSearchParams): string {
 }
 
 export function DealsBrowser({ admin = false, fixedParams = {} as Record<string, string> }) {
+  return admin ? <AdminDealsBrowser fixedParams={fixedParams} /> : <CatalogBrowser />
+}
+
+function AdminDealsBrowser({ fixedParams }: { fixedParams: Record<string, string> }) {
+  const admin = true
   const [sp, setSp] = useSearchParams()
   const [data, setData] = useState<Page<Deal> | null>(null)
   const [error, setError] = useState<unknown>(null)

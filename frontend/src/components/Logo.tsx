@@ -14,7 +14,7 @@ export function Logo() {
     <span className="flex items-center gap-2">
       <LogoMark />
       <span className="leading-tight">
-        <span className="block text-lg font-extrabold tracking-tight text-teal-800">Deal Me In</span>
+        <span className="brand-name block text-xl font-extrabold text-teal-800">Deal Me In<span className="brand-dot">.</span></span>
         <span className="hidden text-xs text-ink-soft sm:block">Great deals. Count me in.</span>
       </span>
     </span>

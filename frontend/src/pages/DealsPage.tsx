@@ -3,7 +3,7 @@ import { DealsBrowser } from '../components/DealsBrowser'
 export default function DealsPage() {
   return (
     <>
-      <h1 className="mb-4 text-2xl font-extrabold text-teal-800">All Deals</h1>
+      <div className="catalog-heading page-enter"><span>THE GOOD STUFF</span><h1>All Deals<span>.</span></h1></div>
       <DealsBrowser />
     </>
   )

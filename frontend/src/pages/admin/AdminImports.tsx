@@ -13,6 +13,8 @@ export default function AdminImports() {
   const [issues, setIssues] = useState<{ job: number; items: Issue[] } | null>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null)
+  const [product, setProduct] = useState({ title: '', retailer: '', category: '', product_url: '', listed_cash_price: '' })
 
   const load = () => api<Job[]>('/api/admin/imports', { admin: true }).then(setJobs).catch(setError)
   useEffect(() => { load() }, [])
@@ -20,26 +22,86 @@ export default function AdminImports() {
   const upload = async (f: File | undefined) => {
     if (!f) return
     setBusy(true); setMsg(null)
-    const fd = new FormData(); fd.append('file', f)
-    try { const j = await api<Job>('/api/admin/imports/preview', { method: 'POST', form: fd, admin: true }); setPreview(j); showIssues(j.id); load() }
-    catch (e) { setMsg({ ok: false, text: (e as Error).message }) } finally { setBusy(false) }
+    setUploadProgress(null)
+    try {
+      if (!f.size || f.size > 25 * 1024 * 1024) throw new Error('Choose a JSON file between 1 byte and 25 MB.')
+      let job: Job
+      {
+        const chunkSize = 256 * 1024
+        const totalChunks = Math.ceil(f.size / chunkSize)
+        const sessionId = crypto.randomUUID()
+        for (let index = 0; index < totalChunks; index++) {
+          setUploadProgress(`Uploading part ${index + 1} of ${totalChunks}…`)
+          await api('/api/admin/imports/upload-chunk', {
+            method: 'POST',
+            raw: f.slice(index * chunkSize, Math.min(f.size, (index + 1) * chunkSize)),
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'X-Upload-Session': sessionId,
+              'X-Upload-Index': String(index),
+              'X-Upload-Total': String(totalChunks),
+            },
+            admin: true,
+          })
+        }
+        setUploadProgress('Preparing preview…')
+        job = await api<Job>('/api/admin/imports/preview-chunks', { method: 'POST', admin: true,
+          body: { sessionId, totalChunks, filename: f.name } })
+      }
+      if (job.failed >= job.totalRows) {
+        setPreview(job); showIssues(job.id); load()
+        throw new Error('No valid products were found in this file.')
+      }
+      setUploadProgress('Adding products…')
+      const result = await api<Job>(`/api/admin/imports/${job.id}/commit`, { method: 'POST', admin: true })
+      setMsg({ ok: true, text: `Imported ${result.created} new and ${result.updated} updated products; ${result.unchanged} unchanged, ${result.failed} rejected.` })
+      if (result.failed || result.warnings) showIssues(job.id)
+      load()
+    } catch (e) { setMsg({ ok: false, text: (e as Error).message }) } finally { setBusy(false); setUploadProgress(null) }
   }
   const commit = async () => {
     if (!preview) return
     setBusy(true)
-    try { const j = await api<Job>(`/api/admin/imports/${preview.id}/commit`, { method: 'POST', admin: true }); setMsg({ ok: true, text: `Imported: ${j.created} created, ${j.updated} updated, ${j.unchanged} unchanged. All new records are drafts.` }); setPreview(null); load() }
+    try { const j = await api<Job>(`/api/admin/imports/${preview.id}/commit`, { method: 'POST', admin: true }); setMsg({ ok: true, text: `Imported: ${j.created} created, ${j.updated} updated, ${j.unchanged} unchanged.` }); setPreview(null); load() }
     catch (e) { setMsg({ ok: false, text: (e as Error).message }) } finally { setBusy(false) }
   }
   const showIssues = (job: number) => api<Issue[]>(`/api/admin/imports/${job}/issues?limit=200`, { admin: true }).then((items) => setIssues({ job, items })).catch((e) => setMsg({ ok: false, text: e.message }))
 
+  const addProduct = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setBusy(true); setMsg(null)
+    try {
+      await api('/api/admin/deals', { method: 'POST', admin: true, body: product })
+      setProduct({ title: '', retailer: '', category: '', product_url: '', listed_cash_price: '' })
+      setMsg({ ok: true, text: 'Product added.' })
+    } catch (error) { setMsg({ ok: false, text: (error as Error).message }) } finally { setBusy(false) }
+  }
+
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-extrabold text-teal-800">Imports</h1>
-      <Notice>Imports are snapshots of source-reported offers, not a live price feed. New records are always created as drafts, and re-importing the same file updates records instead of duplicating them.</Notice>
+      <Notice>Re-importing the same source records updates them instead of creating duplicates.</Notice>
       <div className="card p-4">
         <label htmlFor="imp" className="label">Dataset file (JSON)</label>
         <input id="imp" type="file" accept=".json,application/json" disabled={busy} onChange={(e) => upload(e.target.files?.[0])} />
+        {uploadProgress && <p className="mt-2 text-sm text-ink-soft" role="status">{uploadProgress}</p>}
       </div>
+      <form className="card space-y-3 p-4" onSubmit={addProduct}>
+        <h2 className="text-lg font-bold text-teal-800">Add product</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {([
+            ['title', 'Product name', 'text', true], ['retailer', 'Retailer', 'text', true],
+            ['category', 'Category', 'text', false], ['listed_cash_price', 'Price', 'number', false],
+            ['product_url', 'Retailer product URL', 'url', false],
+          ] as const).map(([field, label, type, required]) => (
+            <label key={field} className="label">{label}
+              <input className="field" type={type} required={required} min={type === 'number' ? '0' : undefined} step={type === 'number' ? '0.01' : undefined}
+                value={product[field]} onChange={(event) => setProduct({ ...product, [field]: event.target.value })} />
+            </label>
+          ))}
+        </div>
+        <button className="btn-primary" disabled={busy}>Add product</button>
+      </form>
       {msg && <div role={msg.ok ? 'status' : 'alert'}><Notice tone={msg.ok ? 'info' : 'warn'}>{msg.text}</Notice></div>}
       {preview && (
         <div className="card space-y-2 p-4">

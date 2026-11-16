@@ -3,5 +3,7 @@ node_modules/
 dist/
 uploads/
 .env
+functions/.secret.local
 *.log
 .DS_Store
+.firebase/

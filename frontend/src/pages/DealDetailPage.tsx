@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api'
 import type { Deal } from '../types'
 import { conditionLabel, dateOnly, instant, money, priceView, timingLabel, verificationLabel } from '../format'
-import { CategoryPlaceholder, DealCard, SaveButton } from '../components/DealCard'
+import { DealCard } from '../components/DealCard'
 import { Empty, ErrorBox, Notice, Spinner } from '../components/ui'
 
 export function DealView({ deal, admin = false }: { deal: Deal; admin?: boolean }) {
@@ -14,13 +14,9 @@ export function DealView({ deal, admin = false }: { deal: Deal; admin?: boolean 
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
       <div className="space-y-6">
         <div className="card overflow-hidden">
-          <div className="aspect-[16/8] bg-cream-100">
-            {deal.imageUrl ? <img src={deal.imageUrl} alt="" className="h-full w-full object-contain" referrerPolicy="no-referrer" /> : <CategoryPlaceholder name={deal.category.name} />}
-          </div>
           <div className="space-y-3 p-6">
             <div className="flex flex-wrap gap-2 text-xs">
               <Link to={`/?retailer=${deal.retailer.slug}`} className="chip bg-teal-50 text-teal-800">{deal.retailer.name}</Link>
-              <Link to={`/?category=${deal.category.slug}`} className="chip bg-cream-100 text-ink">{deal.category.name}</Link>
               {deal.offerType === 'STOREWIDE' && <span className="chip bg-orange-50 text-accent-700">Storewide promotion</span>}
               {deal.condition !== 'UNKNOWN' && <span className="chip bg-cream-100 text-ink">{conditionLabel[deal.condition]}</span>}
             </div>
@@ -117,7 +113,6 @@ export function DealView({ deal, admin = false }: { deal: Deal; admin?: boolean 
           ) : (
             <p className="text-sm text-ink-soft">No link is available for this offer.</p>
           )}
-          <SaveButton id={deal.id} title={deal.title} />
         </div>
         {!admin && <ReportForm id={deal.id} />}
       </aside>
